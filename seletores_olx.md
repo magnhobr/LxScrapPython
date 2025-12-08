@@ -256,3 +256,4 @@ Fonte: Seletores extraídos do código JavaScript oficial do OLX
 
 **Importante**: Os seletores podem mudar se o OLX atualizar sua estrutura HTML. Sempre teste após atualizações do site.
 
+
