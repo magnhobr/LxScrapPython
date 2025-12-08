@@ -9,10 +9,14 @@ Este arquivo contém os seletores oficiais do OLX extraídos do código JavaScri
 - **Seletor Alternativo 1**: `div[data-testid="account-box"]`
 - **Observações**: Primeiro filho do elemento, texto dividido por `\n`
 
-### Descrição/Modelo do Veículo
-- **Seletor Principal**: `.ad__sc-wuor06-0.hfcCRQ span.olx-color-neutral-120`
-- **Seletor Alternativo 1**: `h1`
-- **Observações**: Busca por texto "MODELO", fallback para título h1
+### Modelo do Veículo
+- **Seletor Principal**: `a.ad__sc-2h9gkk-3.lkkHCr` (extraído da URL)
+- **Observações**: O modelo está na URL do link, após a marca. Padrão: `.../autos-e-pecas/carros-vans-e-utilitarios/MARCA/MODELO/...`. Exemplo: `https://www.olx.com.br/autos-e-pecas/carros-vans-e-utilitarios/ford/ecosport/...` → modelo: "ecosport"
+
+### Versão do Veículo
+- **Seletor Principal**: `h1`
+- **Seletor Alternativo 1**: `.ad__sc-wuor06-0.hfcCRQ span.olx-color-neutral-120`
+- **Observações**: Versão completa do veículo extraída do título H1 (ex: "Ford Se 1.6 16v Flex 5p Aut.")
 
 ### Ano do Veículo
 - **Seletor Principal**: `.ad__sc-wuor06-0.hfcCRQ span.olx-color-neutral-120`
@@ -45,19 +49,21 @@ Este arquivo contém os seletores oficiais do OLX extraídos do código JavaScri
 - **Observações**: Busca texto "PREÇO MÉDIO OLX"
 
 ### Número de Telefone (Principal)
-- **Seletor Principal**: `span.typo-body-large.text-neutral-120`
-- **Seletor Alternativo 1**: `.ad__sc-14mcmsd-3.jojxFh`
-- **Observações**: Regex: `\(\d{2}\)\s*\d{4,5}-?\d{4}`
+- **Seletor Principal**: `span.ad__sc-14mcmsd-7.hORwFH`
+- **Seletor Alternativo 1**: `span.typo-body-large.font-light.ad__sc-14mcmsd-7`
+- **Seletor Alternativo 2**: `span.typo-body-large.text-neutral-120`
+- **Seletor Alternativo 3**: `.ad__sc-14mcmsd-3.jojxFh`
+- **Observações**: Regex: `\(\d{2}\)\s*\d{4,5}-?\d{4}`. O telefone aparece no elemento com classes `ad__sc-14mcmsd-7 hORwFH` dentro de um container com ícone de telefone.
 
-### Número de Telefone (Alternativo 2)
+### Número de Telefone (Alternativo 4)
 - **Seletor Principal**: `span[data-ds-component="DS-Text"]`
 - **Observações**: Regex para telefone
 
-### Número de Telefone (Alternativo 2)
+### Número de Telefone (Alternativo 5)
 - **Seletor Principal**: `.olx-text--caption`
 - **Observações**: Regex para telefone
 
-### Número de Telefone (Alternativo 3)
+### Número de Telefone (Alternativo 6)
 - **Seletor Principal**: `span`
 - **Observações**: Filtra por regex telefone
 
@@ -293,6 +299,8 @@ Fonte: Seletores extraídos do código JavaScript oficial do OLX
   - Cidade/Estado/CEP: `span.typo-body-small.font-semibold.text-neutral-110`
   - Ano do Veículo: `a.ad__sc-2h9gkk-3.lkkHCr` (seletor alternativo adicionado)
   - Marca do Veículo: `a.ad__sc-2h9gkk-3.lkkHCr` (novo campo)
+  - Modelo do Veículo: `a.ad__sc-2h9gkk-3.lkkHCr` (extraído da URL do link)
+  - Versão do Veículo: `h1` (separado do modelo, extraído do título)
   - Preço Médio OLX: `span[data-ds-component="DS-Text"].olx-text.olx-text--body-medium.olx-text--block.olx-text--bold` (seletor específico adicionado)
 
 **Importante**: Os seletores podem mudar se o OLX atualizar sua estrutura HTML. Sempre teste após atualizações do site.
