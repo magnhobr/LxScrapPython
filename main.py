@@ -191,19 +191,44 @@ def extract_data_selenium(url: str) -> Dict[str, Optional[str]]:
                     if "acesso" not in nome.lower() and len(nome) > 1:
                         data['nome_vendedor'] = nome
 
-        # 4. Extração FIPE
-        fipe_container = soup.find(string=re.compile(r'FIPE', re.I))
-        if fipe_container:
-            parent = fipe_container.find_parent()
-            # Sobe na árvore até achar o container que tem o valor
-            for _ in range(3):
-                if not parent: break
-                txt = parent.get_text()
-                match = re.search(r'R\$\s*[\d.,]+', txt)
-                if match:
-                    data['preco_fipe'] = match.group(0)
-                    break
-                parent = parent.parent
+        # 4. Extração FIPE e PREÇO MÉDIO OLX
+        # Busca pelos containers LkJa2kno e identifica pelo label dentro de cada um
+        
+        # Busca todos os containers com a classe LkJa2kno
+        containers = soup.select('div.LkJa2kno')
+        logger.debug(f"Containers LkJa2kno encontrados: {len(containers)}")
+        
+        for container in containers:
+            # Busca o label dentro do container (span com data-variant="overline")
+            label_elem = container.find('span', {'data-variant': 'overline'})
+            if not label_elem:
+                continue
+            
+            label_text = clean_text(label_elem.get_text()).upper()
+            
+            # Busca o preço dentro do container (span com as classes específicas)
+            preco_elem = container.select_one('span[data-ds-component="DS-Text"].olx-text.olx-text--body-medium.olx-text--block.olx-text--bold')
+            if not preco_elem:
+                continue
+            
+            preco_text = clean_text(preco_elem.get_text())
+            preco_match = re.search(r'R\$\s*[\d.,]+', preco_text)
+            if not preco_match:
+                continue
+            
+            preco_value = preco_match.group(0)
+            
+            # Identifica se é FIPE ou Preço Médio OLX pelo label
+            if 'FIPE' in label_text and not data['preco_fipe']:
+                data['preco_fipe'] = preco_value
+                logger.debug(f"Preço FIPE encontrado: {data['preco_fipe']}")
+            elif ('MÉDIO' in label_text or 'MEDIO' in label_text) and 'OLX' in label_text and not data['preco_medio_olx']:
+                data['preco_medio_olx'] = preco_value
+                logger.debug(f"Preço Médio OLX encontrado: {data['preco_medio_olx']}")
+            
+            # Se já encontrou ambos, pode parar
+            if data['preco_fipe'] and data['preco_medio_olx']:
+                break
 
         # 5. Extração TELEFONE
         # Seletor específico: span.ad__sc-14mcmsd-7.hORwFH ou span.typo-body-large.font-light.ad__sc-14mcmsd-7
@@ -336,15 +361,6 @@ def extract_data_selenium(url: str) -> Dict[str, Optional[str]]:
                     if modelo_url and modelo_url not in ['estado-sp', 'estado-pr', 'estado-rj', 'estado-mg', 'estado-sc', 'estado-rs', 'estado-ba', 'estado-go', 'estado-pe', 'estado-ce', 'regiao-de-sorocaba', 'regiao']:
                         data['modelo_veiculo'] = modelo_url.replace('-', ' ').title()
                         logger.debug(f"Modelo encontrado na URL: {data['modelo_veiculo']}")
-
-        # 10. Extração PREÇO MÉDIO OLX
-        preco_medio_elem = soup.select_one('span[data-ds-component="DS-Text"].olx-text.olx-text--body-medium.olx-text--block.olx-text--bold')
-        if preco_medio_elem:
-            preco_text = clean_text(preco_medio_elem.get_text())
-            preco_match = re.search(r'R\$\s*[\d.,]+', preco_text)
-            if preco_match:
-                data['preco_medio_olx'] = preco_match.group(0)
-                logger.debug(f"Preço Médio OLX encontrado: {data['preco_medio_olx']}")
 
         logger.info(f"Dados extraídos: {data}")
         return data

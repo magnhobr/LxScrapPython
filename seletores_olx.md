@@ -32,17 +32,17 @@ Este arquivo contém os seletores oficiais do OLX extraídos do código JavaScri
 - **Seletor Principal**: `.ad__sc-q5xder-1.hoJpM .olx-d-flex.olx-fd-column`
 - **Observações**: Remove "R$ " do texto
 
-### Preço FIPE (Valor)
-- **Seletor Principal**: `.LkJa2kno` (children[0])
-- **Observações**: Mapeia valores, busca label "PREÇO FIPE"
+### Preço FIPE (Container e Valor)
+- **Container Principal**: `div.LkJa2kno`
+- **Label**: `span[data-variant="overline"]` (dentro do container, contém "preço fipe" ou "PREÇO FIPE")
+- **Valor**: `span[data-ds-component="DS-Text"].olx-text.olx-text--body-medium.olx-text--block.olx-text--bold` (dentro do container)
+- **Observações**: Busca containers com classe `LkJa2kno`, identifica pelo label "FIPE" e extrai o preço do mesmo container
 
-### Preço FIPE (Label)
-- **Seletor Principal**: `.LkJa2kno` (children[1])
-- **Observações**: Busca texto "PREÇO FIPE"
-
-### Preço Médio OLX (Valor)
-- **Seletor Principal**: `.LkJa2kno` (children[0])
-- **Observações**: Mapeia valores, busca label "PREÇO MÉDIO OLX"
+### Preço Médio OLX (Container e Valor)
+- **Container Principal**: `div.LkJa2kno`
+- **Label**: `span[data-variant="overline"]` (dentro do container, contém "Preço Médio OLX" ou "PREÇO MÉDIO OLX")
+- **Valor**: `span[data-ds-component="DS-Text"].olx-text.olx-text--body-medium.olx-text--block.olx-text--bold` (dentro do container)
+- **Observações**: Busca containers com classe `LkJa2kno`, identifica pelo label "MÉDIO OLX" e extrai o preço do mesmo container
 
 ### Preço Médio OLX (Label)
 - **Seletor Principal**: `.LkJa2kno` (children[1])
