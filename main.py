@@ -96,7 +96,19 @@ def clean_text(text):
 
 def extract_data_selenium(url: str) -> Dict[str, Optional[str]]:
     driver = None
-    data = {'nome_vendedor': None, 'modelo_veiculo': None, 'valor_anuncio': None, 'preco_fipe': None}
+    data = {
+        'nome_vendedor': None, 
+        'modelo_veiculo': None, 
+        'valor_anuncio': None, 
+        'preco_fipe': None,
+        'telefone': None,
+        'quilometragem': None,
+        'bairro': None,
+        'cidade_estado_cep': None,
+        'ano_veiculo': None,
+        'marca_veiculo': None,
+        'preco_medio_olx': None
+    }
     
     try:
         logger.info("Iniciando Selenium (Modo Turbo)...")
@@ -192,6 +204,85 @@ def extract_data_selenium(url: str) -> Dict[str, Optional[str]]:
                     break
                 parent = parent.parent
 
+        # 5. Extração TELEFONE
+        telefone_elem = soup.select_one('span.typo-body-large.text-neutral-120')
+        if telefone_elem:
+            telefone_text = clean_text(telefone_elem.get_text())
+            telefone_match = re.search(r'\(?\d{2}\)?\s*\d{4,5}-?\d{4}', telefone_text)
+            if telefone_match:
+                data['telefone'] = telefone_match.group(0)
+                logger.debug(f"Telefone encontrado: {data['telefone']}")
+
+        # 6. Extração QUILOMETRAGEM
+        km_elem = soup.select_one('span.ad__sc-hj0yqs-0.ekhFnR')
+        if km_elem:
+            # Pega apenas o texto direto do span (antes dos divs internos)
+            # O valor está no texto principal do span, não nos divs filhos
+            km_text = ''
+            for content in km_elem.contents:
+                if isinstance(content, str):
+                    km_text += content.strip()
+            # Se não encontrou texto direto, tenta get_text mas filtra melhor
+            if not km_text:
+                km_text = km_elem.get_text(separator=' ', strip=True)
+            # Extrai o primeiro número encontrado (o valor principal)
+            km_match = re.search(r'\d+', km_text)
+            if km_match:
+                data['quilometragem'] = km_match.group(0)
+                logger.debug(f"Quilometragem encontrada: {data['quilometragem']}")
+
+        # 7. Extração BAIRRO
+        bairro_elems = soup.select('span.typo-body-medium.font-semibold')
+        for elem in bairro_elems:
+            # Verifica se não é um link e não contém marca/ano
+            if elem.name != 'a':
+                bairro_text = clean_text(elem.get_text())
+                # Filtra: não deve ser numérico de 4 dígitos (ano) nem marca conhecida
+                if bairro_text and not re.match(r'^\d{4}$', bairro_text) and len(bairro_text) > 5:
+                    # Verifica se não é marca conhecida (pode ser expandido)
+                    marcas_conhecidas = ['volkswagen', 'fiat', 'chevrolet', 'ford', 'toyota', 'honda', 'hyundai', 'renault', 'peugeot', 'citroen']
+                    if not any(marca.lower() in bairro_text.lower() for marca in marcas_conhecidas):
+                        data['bairro'] = bairro_text
+                        logger.debug(f"Bairro encontrado: {data['bairro']}")
+                        break
+
+        # 8. Extração CIDADE/ESTADO/CEP
+        local_elem = soup.select_one('span.typo-body-small.font-semibold.text-neutral-110')
+        if local_elem:
+            local_text = clean_text(local_elem.get_text())
+            if local_text:
+                data['cidade_estado_cep'] = local_text
+                logger.debug(f"Cidade/Estado/CEP encontrado: {data['cidade_estado_cep']}")
+
+        # 9. Extração ANO e MARCA (usam o mesmo seletor, diferenciar por conteúdo)
+        ano_marca_elems = soup.select('a.ad__sc-2h9gkk-3.lkkHCr')
+        for elem in ano_marca_elems:
+            text = clean_text(elem.get_text())
+            if text:
+                # Verifica se é ano (4 dígitos numéricos)
+                if re.match(r'^\d{4}$', text):
+                    if not data['ano_veiculo']:
+                        data['ano_veiculo'] = text
+                        logger.debug(f"Ano encontrado: {data['ano_veiculo']}")
+                # Se não é ano e não é muito curto, pode ser marca
+                elif len(text) > 2 and not re.match(r'^\d+$', text):
+                    # Verifica se não é modelo (geralmente modelos são mais longos e específicos)
+                    if not data['marca_veiculo'] and len(text) < 20:
+                        # Lista básica de marcas conhecidas para validação
+                        marcas_validas = ['volkswagen', 'vw', 'fiat', 'chevrolet', 'ford', 'toyota', 'honda', 'hyundai', 'renault', 'peugeot', 'citroen', 'nissan', 'mitsubishi', 'suzuki', 'kia', 'jeep', 'ram', 'dodge', 'bmw', 'mercedes', 'audi']
+                        if any(marca.lower() in text.lower() for marca in marcas_validas):
+                            data['marca_veiculo'] = text
+                            logger.debug(f"Marca encontrada: {data['marca_veiculo']}")
+
+        # 10. Extração PREÇO MÉDIO OLX
+        preco_medio_elem = soup.select_one('span[data-ds-component="DS-Text"].olx-text.olx-text--body-medium.olx-text--block.olx-text--bold')
+        if preco_medio_elem:
+            preco_text = clean_text(preco_medio_elem.get_text())
+            preco_match = re.search(r'R\$\s*[\d.,]+', preco_text)
+            if preco_match:
+                data['preco_medio_olx'] = preco_match.group(0)
+                logger.debug(f"Preço Médio OLX encontrado: {data['preco_medio_olx']}")
+
         logger.info(f"Dados extraídos: {data}")
         return data
 
@@ -252,10 +343,17 @@ def main():
     end_time = time.time()
     
     print("\n" + "="*40)
-    print(f"👤 Vendedor: {data['nome_vendedor']}")
-    print(f"🚗 Modelo:   {data['modelo_veiculo']}")
-    print(f"💰 Preço:    {data['valor_anuncio']}")
-    print(f"📊 FIPE:     {data['preco_fipe']}")
+    print(f"👤 Vendedor: {data['nome_vendedor'] or 'Não encontrado'}")
+    print(f"🏭 Marca:    {data['marca_veiculo'] or 'Não encontrado'}")
+    print(f"🚗 Modelo:   {data['modelo_veiculo'] or 'Não encontrado'}")
+    print(f"📅 Ano:      {data['ano_veiculo'] or 'Não encontrado'}")
+    print(f"📏 KM:       {data['quilometragem'] or 'Não encontrado'}")
+    print(f"💰 Valor Anunciado: {data['valor_anuncio'] or 'Não encontrado'}")
+    print(f"📊 FIPE:     {data['preco_fipe'] or 'Não encontrado'}")
+    print(f"📈 Preço Médio OLX: {data['preco_medio_olx'] or 'Não encontrado'}")
+    print(f"📞 Telefone:  {data['telefone'] or 'Não encontrado'}")
+    print(f"📍 Bairro:   {data['bairro'] or 'Não encontrado'}")
+    print(f"🌍 Local:    {data['cidade_estado_cep'] or 'Não encontrado'}")
     print("="*40)
     print(f"⏱️  Tempo total: {end_time - start_time:.2f} segundos")
 

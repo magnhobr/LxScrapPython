@@ -19,8 +19,10 @@ Este arquivo contém os seletores oficiais do OLX extraídos do código JavaScri
 - **Observações**: Busca por texto "ANO"
 
 ### Preço do Veículo
-- **Seletor Principal**: `h2.olx-text.olx-text--title-large.olx-text--block.ad__sc-1leoitd-0.bJHaGt`
-- **Seletor Alternativo 1**: `h2.ad__sc-1leoitd-0`
+- **Seletor Principal**: `span.typo-title-large`
+- **Seletor Alternativo 1**: `h2.olx-text.olx-text--title-large.olx-text--block.ad__sc-1leoitd-0.bJHaGt`
+- **Seletor Alternativo 2**: `h2.ad__sc-1leoitd-0`
+- **Observações**: O seletor `span.typo-title-large` contém o preço formatado (ex: "R$ 37.000")
 
 ### Valor do Anúncio
 - **Seletor Principal**: `.ad__sc-q5xder-1.hoJpM .olx-d-flex.olx-fd-column`
@@ -43,10 +45,11 @@ Este arquivo contém os seletores oficiais do OLX extraídos do código JavaScri
 - **Observações**: Busca texto "PREÇO MÉDIO OLX"
 
 ### Número de Telefone (Principal)
-- **Seletor Principal**: `.ad__sc-14mcmsd-3.jojxFh`
+- **Seletor Principal**: `span.typo-body-large.text-neutral-120`
+- **Seletor Alternativo 1**: `.ad__sc-14mcmsd-3.jojxFh`
 - **Observações**: Regex: `\(\d{2}\)\s*\d{4,5}-?\d{4}`
 
-### Número de Telefone (Alternativo 1)
+### Número de Telefone (Alternativo 2)
 - **Seletor Principal**: `span[data-ds-component="DS-Text"]`
 - **Observações**: Regex para telefone
 
@@ -57,6 +60,32 @@ Este arquivo contém os seletores oficiais do OLX extraídos do código JavaScri
 ### Número de Telefone (Alternativo 3)
 - **Seletor Principal**: `span`
 - **Observações**: Filtra por regex telefone
+
+### Quilometragem
+- **Seletor Principal**: `span.ad__sc-hj0yqs-0.ekhFnR`
+- **Observações**: Quilometragem do veículo em km (ex: "89000"). O elemento pode conter divs internos, extrair apenas o texto numérico principal.
+
+### Bairro/Localização
+- **Seletor Principal**: `span.typo-body-medium.font-semibold`
+- **Observações**: Bairro ou localização do anúncio (ex: "Parque Residencial Villa dos Inglezes"). Pode haver múltiplos elementos com essa classe, filtrar por contexto (não ser link, não ser marca/ano).
+
+### Cidade/Estado/CEP
+- **Seletor Principal**: `span.typo-body-small.font-semibold.text-neutral-110`
+- **Observações**: Localização completa (ex: "Sorocaba, SP, 18051864")
+
+### Ano do Veículo (Atualizado)
+- **Seletor Principal**: `.ad__sc-wuor06-0.hfcCRQ span.olx-color-neutral-120`
+- **Seletor Alternativo 1**: `a.ad__sc-2h9gkk-3.lkkHCr` (filtro: texto numérico de 4 dígitos)
+- **Observações**: Busca por texto "ANO" ou link com texto numérico de 4 dígitos (regex `^\d{4}$`)
+
+### Marca do Veículo
+- **Seletor Principal**: `a.ad__sc-2h9gkk-3.lkkHCr` (filtro: texto de marca)
+- **Observações**: Marca do veículo (ex: "Volkswagen", "Fiat"). Diferenciar de ano verificando se o texto não é numérico de 4 dígitos.
+
+### Preço Médio OLX (Valor) - Atualizado
+- **Seletor Principal**: `span[data-ds-component="DS-Text"].olx-text.olx-text--body-medium.olx-text--block.olx-text--bold`
+- **Seletor Alternativo 1**: `.LkJa2kno` (children[0])
+- **Observações**: Preço médio do veículo no OLX. Mapeia valores, busca label "PREÇO MÉDIO OLX" ou usa o seletor específico.
 
 ### Botão Ver números
 - **Seletor Principal**: `span[data-ds-component="DS-Text"].olx-text.olx-text--caption.olx-text--block.olx-text--semibold.olx-color-secondary-110`
@@ -252,7 +281,19 @@ Este arquivo contém os seletores oficiais do OLX extraídos do código JavaScri
 ## 🔄 Atualizações
 
 Este arquivo foi criado em: 2025-12-05
+Última atualização: 2025-12-06
 Fonte: Seletores extraídos do código JavaScript oficial do OLX
+
+**Mudanças recentes:**
+- 2025-12-06: Atualizado seletor de preço para `span.typo-title-large` (seletor principal)
+- 2025-12-06: Adicionados novos seletores:
+  - Telefone: `span.typo-body-large.text-neutral-120` (seletor principal atualizado)
+  - Quilometragem: `span.ad__sc-hj0yqs-0.ekhFnR`
+  - Bairro: `span.typo-body-medium.font-semibold`
+  - Cidade/Estado/CEP: `span.typo-body-small.font-semibold.text-neutral-110`
+  - Ano do Veículo: `a.ad__sc-2h9gkk-3.lkkHCr` (seletor alternativo adicionado)
+  - Marca do Veículo: `a.ad__sc-2h9gkk-3.lkkHCr` (novo campo)
+  - Preço Médio OLX: `span[data-ds-component="DS-Text"].olx-text.olx-text--body-medium.olx-text--block.olx-text--bold` (seletor específico adicionado)
 
 **Importante**: Os seletores podem mudar se o OLX atualizar sua estrutura HTML. Sempre teste após atualizações do site.
 

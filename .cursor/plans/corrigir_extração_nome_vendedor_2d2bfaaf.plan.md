@@ -1,38 +1,3 @@
----
-name: Corrigir extração nome vendedor
-overview: "Aplicar limpeza cirúrgica nas funções de extração do nome do vendedor para remover texto concatenado (ex: \"HenriqueÚltimo acesso\") usando função _clean_name e separator no get_text."
-todos:
-  - id: setup-dependencies
-    content: Criar requirements.txt com requests, beautifulsoup4, lxml e selenium (opcional)
-    status: completed
-  - id: create-main-script
-    content: Criar main.py com função CLI que recebe URL e configura headers HTTP personalizados (User-Agent, Accept, Referer)
-    status: completed
-    dependencies:
-      - setup-dependencies
-  - id: implement-extraction
-    content: Implementar funções de extração para nome do vendedor, modelo, valor e preço FIPE usando BeautifulSoup, com tratamento opcional para FIPE
-    status: completed
-    dependencies:
-      - create-main-script
-  - id: add-fallback-logic
-    content: Adicionar lógica de fallback que detecta dados ausentes, registra avisos e sugere Selenium se conteúdo dinâmico for detectado
-    status: completed
-    dependencies:
-      - implement-extraction
-  - id: add-error-handling
-    content: Adicionar tratamento robusto de erros para URLs inválidas, páginas não encontradas e dados ausentes
-    status: completed
-    dependencies:
-      - implement-extraction
-  - id: test-scraping
-    content: Testar o scraper com a URL fornecida, ajustar seletores CSS e validar extração de todos os campos
-    status: completed
-    dependencies:
-      - add-fallback-logic
-      - add-error-handling
----
-
 # Plano: Corrigir Extração do Nome do Vendedor
 
 ## Problema Identificado
