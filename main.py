@@ -97,6 +97,7 @@ def clean_text(text):
 def extract_data_selenium(url: str) -> Dict[str, Optional[str]]:
     driver = None
     data = {
+        'id_anuncio': None,  # ID extraído da URL
         'nome_vendedor': None, 
         'marca_veiculo': None,
         'modelo_veiculo': None,  # Modelo extraído da URL
@@ -110,6 +111,36 @@ def extract_data_selenium(url: str) -> Dict[str, Optional[str]]:
         'ano_veiculo': None,
         'preco_medio_olx': None
     }
+    
+    # Extração do ID do anúncio e MARCA da URL principal
+    # Padrão: Número grande (8-10 dígitos) após hífen, pode estar no final ou antes de ? ou #
+    # Exemplos:
+    # .../mini-cooper-1-6-impecavel-1460372718
+    # .../fiat-uno-mille-1-0-fire-f-flex-economy-2p-2002-1460309392?rec=h...
+    # Remove query string e fragmento para buscar apenas no path
+    url_path = url.split('?')[0].split('#')[0]
+    # Busca números de 8-10 dígitos após hífen (para evitar pegar anos como 2002 que tem 4 dígitos)
+    # Pode estar no final ou antes de ? ou #
+    id_match = re.search(r'-(\d{8,10})(?:[?/#]|$)', url_path)
+    if id_match:
+        data['id_anuncio'] = id_match.group(1)
+        logger.debug(f"ID do anúncio extraído da URL: {data['id_anuncio']}")
+    else:
+        # Fallback: busca números de 6+ dígitos (caso o ID tenha formato diferente)
+        id_match = re.search(r'-(\d{6,})(?:[?/#]|$)', url_path)
+        if id_match:
+            data['id_anuncio'] = id_match.group(1)
+            logger.debug(f"ID do anúncio extraído da URL (fallback): {data['id_anuncio']}")
+    
+    # Extração da MARCA da URL principal (se disponível)
+    # Padrão: .../autos-e-pecas/carros-vans-e-utilitarios/MARCA/...
+    marca_url_match = re.search(r'/autos-e-pecas/carros-vans-e-utilitarios/([^/]+)/', url_path)
+    if marca_url_match:
+        marca_url = marca_url_match.group(1)
+        marcas_validas = ['volkswagen', 'vw', 'fiat', 'chevrolet', 'ford', 'toyota', 'honda', 'hyundai', 'renault', 'peugeot', 'citroen', 'nissan', 'mitsubishi', 'suzuki', 'kia', 'jeep', 'ram', 'dodge', 'bmw', 'mercedes', 'audi', 'mini']
+        if marca_url.lower() in [m.lower() for m in marcas_validas] or any(m.lower() in marca_url.lower() for m in marcas_validas):
+            data['marca_veiculo'] = marca_url.replace('-', ' ').title()
+            logger.debug(f"Marca encontrada na URL principal: {data['marca_veiculo']} (de: {marca_url})")
     
     try:
         logger.info("Iniciando Selenium (Modo Turbo)...")
@@ -329,6 +360,8 @@ def extract_data_selenium(url: str) -> Dict[str, Optional[str]]:
 
         # 9. Extração ANO, MARCA e MODELO (usam o mesmo seletor, diferenciar por conteúdo e URL)
         ano_marca_elems = soup.select('a.ad__sc-2h9gkk-3.lkkHCr')
+        logger.debug(f"Elementos a.ad__sc-2h9gkk-3.lkkHCr encontrados: {len(ano_marca_elems)}")
+        
         for elem in ano_marca_elems:
             text = clean_text(elem.get_text())
             href = elem.get('href', '')
@@ -344,23 +377,46 @@ def extract_data_selenium(url: str) -> Dict[str, Optional[str]]:
                     # Verifica se não é versão (geralmente versões são mais longas e específicas)
                     if not data['marca_veiculo'] and len(text) < 20:
                         # Lista básica de marcas conhecidas para validação
-                        marcas_validas = ['volkswagen', 'vw', 'fiat', 'chevrolet', 'ford', 'toyota', 'honda', 'hyundai', 'renault', 'peugeot', 'citroen', 'nissan', 'mitsubishi', 'suzuki', 'kia', 'jeep', 'ram', 'dodge', 'bmw', 'mercedes', 'audi']
-                        if any(marca.lower() in text.lower() for marca in marcas_validas):
-                            data['marca_veiculo'] = text
-                            logger.debug(f"Marca encontrada: {data['marca_veiculo']}")
+                        marcas_validas = ['volkswagen', 'vw', 'fiat', 'chevrolet', 'ford', 'toyota', 'honda', 'hyundai', 'renault', 'peugeot', 'citroen', 'nissan', 'mitsubishi', 'suzuki', 'kia', 'jeep', 'ram', 'dodge', 'bmw', 'mercedes', 'audi', 'mini']
+                        # Verifica se o texto contém ou é uma marca conhecida
+                        text_lower = text.lower()
+                        for marca in marcas_validas:
+                            if marca.lower() == text_lower or marca.lower() in text_lower or text_lower in marca.lower():
+                                data['marca_veiculo'] = text
+                                logger.debug(f"Marca encontrada no texto: {data['marca_veiculo']}")
+                                break
             
-            # Extração do MODELO da URL
+            # Extração da MARCA e MODELO da URL
             # Padrão da URL: .../autos-e-pecas/carros-vans-e-utilitarios/MARCA/MODELO/...
-            if href and not data['modelo_veiculo']:
-                # Procura o padrão na URL: /marca/MODELO/
+            if href:
+                # Procura o padrão na URL: /autos-e-pecas/carros-vans-e-utilitarios/MARCA/MODELO/
                 url_match = re.search(r'/autos-e-pecas/carros-vans-e-utilitarios/([^/]+)/([^/]+)/', href)
                 if url_match:
                     marca_url = url_match.group(1)
                     modelo_url = url_match.group(2)
-                    # Verifica se o modelo não é "estado-sp" ou outros segmentos comuns
-                    if modelo_url and modelo_url not in ['estado-sp', 'estado-pr', 'estado-rj', 'estado-mg', 'estado-sc', 'estado-rs', 'estado-ba', 'estado-go', 'estado-pe', 'estado-ce', 'regiao-de-sorocaba', 'regiao']:
+                    
+                    # Extração da MARCA da URL (se ainda não foi encontrada)
+                    if not data['marca_veiculo'] and marca_url:
+                        # Lista de marcas conhecidas para validar
+                        marcas_validas = ['volkswagen', 'vw', 'fiat', 'chevrolet', 'ford', 'toyota', 'honda', 'hyundai', 'renault', 'peugeot', 'citroen', 'nissan', 'mitsubishi', 'suzuki', 'kia', 'jeep', 'ram', 'dodge', 'bmw', 'mercedes', 'audi', 'mini']
+                        if marca_url.lower() in [m.lower() for m in marcas_validas] or any(m.lower() in marca_url.lower() for m in marcas_validas):
+                            data['marca_veiculo'] = marca_url.replace('-', ' ').title()
+                            logger.debug(f"Marca encontrada na URL: {data['marca_veiculo']} (de: {marca_url})")
+                    
+                    # Extração do MODELO da URL
+                    # Lista de segmentos que NÃO são modelo (estados, regiões, etc.)
+                    segmentos_excluidos = [
+                        'estado-sp', 'estado-pr', 'estado-rj', 'estado-mg', 'estado-sc', 'estado-rs', 
+                        'estado-ba', 'estado-go', 'estado-pe', 'estado-ce', 'estado-df', 'estado-es',
+                        'estado-ma', 'estado-ms', 'estado-mt', 'estado-pa', 'estado-pb', 'estado-pi',
+                        'regiao-de-sorocaba', 'regiao', 'sao-paulo-e-regiao', 'zona-leste', 'zona-norte',
+                        'zona-sul', 'zona-oeste', 'centro', 'grande-sao-paulo', 'abc'
+                    ]
+                    # Verifica se o modelo não é um segmento excluído e ainda não foi encontrado
+                    if not data['modelo_veiculo'] and modelo_url and modelo_url.lower() not in [s.lower() for s in segmentos_excluidos]:
+                        # Formata o modelo: substitui hífens por espaços e capitaliza
                         data['modelo_veiculo'] = modelo_url.replace('-', ' ').title()
-                        logger.debug(f"Modelo encontrado na URL: {data['modelo_veiculo']}")
+                        logger.debug(f"Modelo encontrado na URL: {data['modelo_veiculo']} (de: {modelo_url} em href: {href[:80]})")
 
         logger.info(f"Dados extraídos: {data}")
         return data
@@ -422,15 +478,16 @@ def main():
     end_time = time.time()
     
     print("\n" + "="*40)
-    print(f"👤 Vendedor: {data['nome_vendedor'] or 'Não encontrado'}")
+    print(f"🆔 ID:       {data['id_anuncio'] or 'Não encontrado'}")
     print(f"🏭 Marca:    {data['marca_veiculo'] or 'Não encontrado'}")
     print(f"🚗 Modelo:   {data['modelo_veiculo'] or 'Não encontrado'}")
     print(f"📋 Versão:   {data['versao_veiculo'] or 'Não encontrado'}")
     print(f"📅 Ano:      {data['ano_veiculo'] or 'Não encontrado'}")
     print(f"📏 KM:       {data['quilometragem'] or 'Não encontrado'}")
-    print(f"💰 Valor Anunciado: {data['valor_anuncio'] or 'Não encontrado'}")
+    print(f"💰 Anunciado: {data['valor_anuncio'] or 'Não encontrado'}")
     print(f"📊 FIPE:     {data['preco_fipe'] or 'Não encontrado'}")
-    print(f"📈 Preço Médio OLX: {data['preco_medio_olx'] or 'Não encontrado'}")
+    print(f"📈 Médio:    {data['preco_medio_olx'] or 'Não encontrado'}")
+    print(f"👤 Vendedor: {data['nome_vendedor'] or 'Não encontrado'}")
     print(f"📞 Telefone:  {data['telefone'] or 'Não encontrado'}")
     print(f"📍 Bairro:   {data['bairro'] or 'Não encontrado'}")
     print(f"🌍 Local:    {data['cidade_estado_cep'] or 'Não encontrado'}")

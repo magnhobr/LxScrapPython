@@ -4,6 +4,13 @@ Este arquivo contém os seletores oficiais do OLX extraídos do código JavaScri
 
 ## 📋 Dados do Anúncio
 
+### ID do Anúncio
+- **Fonte**: URL do anúncio
+- **Padrão**: Número grande (8-10 dígitos) após hífen, pode estar no final ou antes de query string (`?`)
+- **Exemplo 1**: `https://sp.olx.com.br/.../mini-cooper-1-6-impecavel-1460372718` → ID: `1460372718`
+- **Exemplo 2**: `https://sp.olx.com.br/.../fiat-uno-mille-1-0-fire-f-flex-economy-2p-2002-1460309392?rec=h...` → ID: `1460309392`
+- **Observações**: Extraído usando regex `-(\d{8,10})(?:[?/#]|$)` na URL. Remove query string e fragmento antes de buscar.
+
 ### Nome do Vendedor
 - **Seletor Principal**: `.ad__sc-ypp2u2-12` (children[0])
 - **Seletor Alternativo 1**: `div[data-testid="account-box"]`
