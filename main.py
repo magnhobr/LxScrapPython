@@ -109,7 +109,8 @@ def extract_data_selenium(url: str) -> Dict[str, Optional[str]]:
         'bairro': None,
         'cidade_estado_cep': None,
         'ano_veiculo': None,
-        'preco_medio_olx': None
+        'preco_medio_olx': None,
+        'link': None  # Link do anúncio no formato https://olx.com.br/vi/{id}
     }
     
     # Extração do ID do anúncio e MARCA da URL principal
@@ -131,6 +132,11 @@ def extract_data_selenium(url: str) -> Dict[str, Optional[str]]:
         if id_match:
             data['id_anuncio'] = id_match.group(1)
             logger.debug(f"ID do anúncio extraído da URL (fallback): {data['id_anuncio']}")
+    
+    # Construção do link no formato https://olx.com.br/vi/{id}
+    if data['id_anuncio']:
+        data['link'] = f"https://olx.com.br/vi/{data['id_anuncio']}"
+        logger.debug(f"Link construído: {data['link']}")
     
     # Extração da MARCA da URL principal (se disponível)
     # Padrão: .../autos-e-pecas/carros-vans-e-utilitarios/MARCA/...
@@ -491,6 +497,7 @@ def main():
     print(f"📞 Telefone:  {data['telefone'] or 'Não encontrado'}")
     print(f"📍 Bairro:   {data['bairro'] or 'Não encontrado'}")
     print(f"🌍 Local:    {data['cidade_estado_cep'] or 'Não encontrado'}")
+    print(f"🔗 Link:     {data['link'] or 'Não encontrado'}")
     print("="*40)
     print(f"⏱️  Tempo total: {end_time - start_time:.2f} segundos")
 
