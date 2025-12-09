@@ -39,4 +39,7 @@ wheels/
 Thumbs.db
 
 
-
+# Local data
+chrome_profile/
+tatus
+links_olx.txt

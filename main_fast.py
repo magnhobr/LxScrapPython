@@ -239,6 +239,37 @@ def extract_data_turbo(url: str) -> Dict[str, Optional[str]]:
                     elif ('MÉDIO' in txt or 'MEDIO' in txt) and 'OLX' in txt and not data['preco_medio_olx']:
                         data['preco_medio_olx'] = val
 
+        # --- ESTRATÉGIA D: EXTRAÇÃO DE MODELO DA URL (Fallback adicional) ---
+        # Busca links na página e extrai modelo da URL quando não encontrado no JSON
+        if not data['modelo_veiculo']:
+            logger.info("🔍 Buscando modelo na URL dos links...")
+            # Busca todos os links com a classe específica (mesma estratégia do main.py)
+            links = soup.select('a.ad__sc-2h9gkk-3.lkkHCr')
+            for link in links:
+                href = link.get('href', '')
+                if not href: continue
+                
+                # Procura o padrão na URL: /autos-e-pecas/carros-vans-e-utilitarios/MARCA/MODELO/
+                url_match = re.search(r'/autos-e-pecas/carros-vans-e-utilitarios/([^/]+)/([^/]+)/', href)
+                if url_match:
+                    modelo_url = url_match.group(2)
+                    
+                    # Lista de segmentos que NÃO são modelo (estados, regiões, etc.)
+                    segmentos_excluidos = [
+                        'estado-sp', 'estado-pr', 'estado-rj', 'estado-mg', 'estado-sc', 'estado-rs', 
+                        'estado-ba', 'estado-go', 'estado-pe', 'estado-ce', 'estado-df', 'estado-es',
+                        'estado-ma', 'estado-ms', 'estado-mt', 'estado-pa', 'estado-pb', 'estado-pi',
+                        'regiao-de-sorocaba', 'regiao', 'sao-paulo-e-regiao', 'zona-leste', 'zona-norte',
+                        'zona-sul', 'zona-oeste', 'centro', 'grande-sao-paulo', 'abc'
+                    ]
+                    
+                    # Verifica se o modelo não é um segmento excluído
+                    if modelo_url and modelo_url.lower() not in [s.lower() for s in segmentos_excluidos]:
+                        # Formata o modelo: substitui hífens por espaços e capitaliza
+                        data['modelo_veiculo'] = modelo_url.replace('-', ' ').title()
+                        logger.info(f"✅ Modelo encontrado na URL: {data['modelo_veiculo']} (de: {modelo_url})")
+                        break  # Para no primeiro modelo válido encontrado
+
         return data
 
     except Exception as e:
@@ -263,22 +294,43 @@ def main():
     start = time.time()
     data = extract_data_turbo(url)
     
-    print("\n" + "="*40)
-    print(f"FONTE: {data['origem_dados']}")
-    print("-" * 40)
+    # Formatação de saída seguindo o layout da imagem
+    print("\n" + "="*50)
     
-    # Ordem de exibição
-    keys = ['versao_veiculo', 'valor_anuncio', 'quilometragem', 'ano_veiculo', 
-            'marca_veiculo', 'modelo_veiculo', 'preco_fipe', 'preco_medio_olx', 
-            'nome_vendedor', 'bairro', 'cidade_estado_cep', 'telefone', 'link']
-            
-    for k in keys:
-        label = k.replace('_', ' ').title()
-        val = data.get(k)
-        print(f"{label.ljust(20)}: {val if val else '---'}")
+    # Ordem exata conforme a imagem: ID, Marca, Modelo, Versão, Ano, KM, Anunciado, FIPE, Médio, Vendedor, Telefone, Bairro, Local, Link
+    campos = [
+        ('🆔 ID', 'id_anuncio'),
+        ('🚗 Marca', 'marca_veiculo'),
+        ('📋 Modelo', 'modelo_veiculo'),
+        ('✨ Versão', 'versao_veiculo'),
+        ('📅 Ano', 'ano_veiculo'),
+        ('🛣️ KM', 'quilometragem'),
+        ('💰 Anunciado', 'valor_anuncio'),
+        ('📊 FIPE', 'preco_fipe'),
+        ('📈 Médio', 'preco_medio_olx'),
+        ('👤 Vendedor', 'nome_vendedor'),
+        ('📞 Telefone', 'telefone'),
+        ('🏘️ Bairro', 'bairro'),
+        ('📍 Local', 'cidade_estado_cep'),
+        ('🔗 Link', 'link')
+    ]
+    
+    for emoji_label, key in campos:
+        valor = data.get(key)
         
-    print("="*40)
-    print(f"Tempo: {time.time() - start:.4f}s")
+        # Tratamentos especiais
+        if key == 'telefone' and not valor:
+            valor = 'Não encontrado'
+        elif key == 'quilometragem' and valor:
+            # Remove "km" se existir, mantém apenas o número
+            valor = str(valor).replace('km', '').replace('KM', '').strip()
+        elif not valor:
+            valor = '---'
+        
+        print(f"{emoji_label.ljust(15)}: {valor}")
+        
+    print("="*50)
+    print(f"⏱️ Tempo: {time.time() - start:.4f}s")
 
 if __name__ == '__main__':
     main()
